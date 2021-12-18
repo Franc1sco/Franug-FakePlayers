@@ -20,6 +20,24 @@ native void FQ_ResetA2sInfo();
 native void FQ_SetNumClients(int iNumClients, bool bResetToDefault = false);
 native void FQ_AddFakePlayer(int iIndex, const char[] sName, int iScore, float flTime);
 native void FQ_RemoveAllFakePlayer();
+public Extension __ext_fakequeries = 
+{
+	name = "fakequeries",
+	file = "fakequeries.ext",
+#if defined AUTOLOAD_EXTENSIONS
+	autoload = 1,
+#else
+	autoload = 0,
+#endif
+#if defined REQUIRE_EXTENSIONS
+	required = 1,
+#else
+	required = 0,
+#endif
+};
+
+#define MIN_REFRESH_TIME 60.0
+#define MAX_REFRESH_TIME 3600.0
 
 public Plugin myinfo =
 {
@@ -32,24 +50,33 @@ public Plugin myinfo =
 
 int g_iFakePlayerCount = 0;
 Handle array_names;
+ConVar cv_maxplayers;
+
+bool firstLoad = true;
 
 public void OnPluginStart()
 {
+	cv_maxplayers = CreateConVar("sm_fakebots_max", "63", "Max fake bots on server");
 	array_names = CreateArray(128);
+}
 
+public void OnMapStart()
+{
 	LoadList();
-
-	char name[128];
-	for (int i = 1; i < GetArraySize(array_names); i++)
+	if(firstLoad)
 	{
-		GetArrayString(array_names, i, name, sizeof(name));
-		FQ_AddFakePlayer(i+1, name, GetRandomInt(0, 60), GetEngineTime()-(i*GetRandomInt(30, 300)));
-		g_iFakePlayerCount++;
+		AddFakePlayers();
+		CreateTimer(GetRandomFloat(MIN_REFRESH_TIME, MAX_REFRESH_TIME), Timer_RefreshPlayers);
+		
+		firstLoad = false;
 	}
+}
 
-	FQ_SetNumClients(g_iFakePlayerCount + GetClientCount());
-
-	FQ_ToggleStatus(true);
+public Action Timer_RefreshPlayers(Handle timer)
+{
+	AddFakePlayers();
+	
+	CreateTimer(GetRandomFloat(MIN_REFRESH_TIME, MAX_REFRESH_TIME), Timer_RefreshPlayers);
 }
 
 
@@ -66,8 +93,6 @@ public void OnClientPostAdminCheck(int client)
 public void LoadList()
 {
 	ClearArray(array_names);
-	FQ_ResetA2sInfo();
-	FQ_RemoveAllFakePlayer();
 	
 	new String:path[PLATFORM_MAX_PATH];
 	BuildPath(PathType:Path_SM, path, sizeof(path), "configs/franug_fakeplayers.txt");
@@ -90,4 +115,32 @@ public void LoadList()
 	}
 	
 	CloseHandle(file);
+}
+
+void AddFakePlayers()
+{
+	FQ_ResetA2sInfo();
+	FQ_RemoveAllFakePlayer();
+	
+	Handle temp_names = CreateArray(128);
+	temp_names = CloneArray(array_names);
+	//PrintToServer("BOT NAME RESTART");
+	//PrintToServer("-------------------------------------------------");
+	g_iFakePlayerCount = 0;
+	char name[128];
+	while(GetArraySize(temp_names) != 0 && g_iFakePlayerCount < cv_maxplayers.IntValue)
+	{
+		int luck = GetRandomInt(0, GetArraySize(temp_names)-1);
+		GetArrayString(temp_names, luck, name, sizeof(name));
+		FQ_AddFakePlayer(g_iFakePlayerCount+1, name, GetRandomInt(0, 200), GetEngineTime()-GetRandomInt(0, 1000));
+		g_iFakePlayerCount++;
+		RemoveFromArray(temp_names, luck);
+		//PrintToServer("Bot name is %s", name);
+	}
+	//PrintToServer("-------------------------------------------------");
+	
+	FQ_SetNumClients(g_iFakePlayerCount + GetClientCount());
+	FQ_ToggleStatus(true);
+	
+	CloseHandle(temp_names);
 }
