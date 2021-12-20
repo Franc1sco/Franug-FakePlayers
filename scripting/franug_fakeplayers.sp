@@ -42,7 +42,7 @@ public Plugin myinfo =
     name = "SM Franug Fake players",
     author = "Franc1sco Franug",
     description = "Create fake players",
-    version = "0.2",
+    version = "0.3",
     url = "https://steamcommunity.com/id/franug"
 };
 
@@ -64,12 +64,12 @@ public void OnPluginStart()
 {
 	AutoExecConfig_SetFile("franug_fakeplayers");
 	
-	cv_maxrefreshplayers = AutoExecConfig_CreateConVar("sm_fakebots_max_refresh", "3600.0", "Max fake bots refresh time on server");
+	cv_maxrefreshplayers = AutoExecConfig_CreateConVar("sm_fakebots_max_refresh", "7200.0", "Max fake bots refresh time on server");
 	cv_minrefreshplayers = AutoExecConfig_CreateConVar("sm_fakebots_min_refresh", "60.0", "Min fake bots refresh time on server");
 	cv_maxcountplayers = AutoExecConfig_CreateConVar("sm_fakebots_max_count", "63", "Max fake bots on server");
 	cv_mincountplayers = AutoExecConfig_CreateConVar("sm_fakebots_min_count", "10", "Min fake bots on server");
 	cv_maxscoreplayers = AutoExecConfig_CreateConVar("sm_fakebots_max_score", "80", "Max fake bots score on server");
-	cv_minscoreplayers = AutoExecConfig_CreateConVar("sm_fakebots_min_score", "80", "Min fake bots score on server");
+	cv_minscoreplayers = AutoExecConfig_CreateConVar("sm_fakebots_min_score", "0", "Min fake bots score on server");
 	cv_maxtimeplayers = AutoExecConfig_CreateConVar("sm_fakebots_max_time", "1000", "Max fake bots join time on server on seconds");
 	cv_mintimeplayers = AutoExecConfig_CreateConVar("sm_fakebots_min_time", "0", "Min fake bots join time on server on seconds");
 	
@@ -79,7 +79,7 @@ public void OnPluginStart()
 	array_names = CreateArray(128);
 }
 
-public void OnMapStart()
+public void OnConfigsExecuted()
 {
 	LoadList();
 	if(firstLoad)
